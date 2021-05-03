@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: "AWS::Serverless-2016-10-31"
+Description: aws-xray-demo
+
+Parameters:
+  EnvName:
+    Type: String
+    Description: Name of an environment 'dev', 'staging', 'prod'.
+
+Conditon:
+  IsProd: !Equals [EnvName, 'main']
+
+DownloaderFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+      FunctionName:
+        Fn::Sub: !If [IsProd, 'ring-downloader', ring-downloader-${EnvName}]
+      Description: Downloads ring videos
+      Runtime: python3.8
+      CodeUri: ./packages/init.py
+      Handler: init.lambda_handler
+      MemorySize: 128
+      Timeout: 20
