@@ -15,6 +15,6 @@ aws cloudformation deploy \
     --stack-name ${stack_name} \
     --no-fail-on-empty-changeset \
     --parameter-overrides \
-        EnvName="${BRANCH}" \
+        BranchName="${BRANCH}" \
     --tags PROJECT=${project} STACK=${stack_name} \
     || ( aws cloudformation describe-stack-events --stack-name $stack_name; echo "Stack failed to deploy"; exit 1 )

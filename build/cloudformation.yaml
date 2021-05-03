@@ -1,20 +1,21 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: "AWS::Serverless-2016-10-31"
-Description: aws-xray-demo
+Description: ring-downloader
 
 Parameters:
-  EnvName:
+  BranchName:
     Type: String
-    Description: Name of an environment 'dev', 'staging', 'prod'.
+    Description: Name of the branch.
 
-Conditon:
-  IsProd: !Equals [EnvName, 'main']
+Conditions:
+  IsProd: !Equals [!Ref BranchName, 'main']
 
-DownloaderFunction:
-  Type: AWS::Serverless::Function
-  Properties:
-      FunctionName:
-        Fn::Sub: !If [IsProd, 'ring-downloader', ring-downloader-${EnvName}]
+Resources:
+  DownloaderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 
+        !If [ IsProd, 'ring-downloader', !Sub 'ring-downloader-${BranchName}' ]
       Description: Downloads ring videos
       Runtime: python3.8
       CodeUri: ./packages/init.py
