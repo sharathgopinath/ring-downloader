@@ -11,7 +11,7 @@ mkdir ./packages || true
 image_name="${project}:${GIT_SHA}"
 docker build -f ../dockerfile -t $image_name ../
 container_id=$(docker create $image_name)
-docker cp $container_id:./app/init.py ./packages/init.py
+docker cp $container_id:./app/src/init.py ./packages/init.py
 docker rm -v $container_id
 
 echo "Publishing package..."

@@ -17,7 +17,7 @@ Resources:
       Description: Credentials to access ring account
       Name: RingCredentials
       SecretString:
-        "{\"username\": \"replace-me\", \"password\": \"replace-me\"}"
+        "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"token\": \"replace-me\"}"
 
   DownloaderFunction:
     Type: AWS::Serverless::Function
@@ -33,3 +33,17 @@ Resources:
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref RingCredentials
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'rate(30 minutes)'
+            Name: RingDownloadSchedule
+            Description: Download schedule
+            Enabled: true
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref DownloaderFunction
+      RetentionInDays: 14
