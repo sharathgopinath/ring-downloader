@@ -1,8 +1,9 @@
-FROM python:3.8.9-buster
+FROM amazon/aws-lambda-python
 WORKDIR /app/
+
+COPY src/init.py ${LAMBDA_TASK_ROOT}
 
 RUN pip install boto3 && \
     pip install ring_doorbell
 
-COPY . .
-CMD [ "python", "./init.py" ]
+CMD [ "init.lambda_handler" ]

@@ -10,7 +10,11 @@ from oauthlib.oauth2 import MissingTokenError
 cache_file = Path("token.cache")
 
 def lambda_handler(event, context):
-    init_ring()
+    # init_ring()
+    return {
+        'statusCode': 200,
+        'body': json.dumps(f'Hello {event["name"]}!')
+    }
 
 def get_secret():
     secret_name = "RingCredentials"

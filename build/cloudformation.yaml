@@ -6,6 +6,9 @@ Parameters:
   BranchName:
     Type: String
     Description: Name of the branch.
+  ImageUri:
+    Type: String
+    Description: Container image uri
 
 Conditions:
   IsProd: !Equals [!Ref BranchName, 'main']
@@ -25,9 +28,8 @@ Resources:
       FunctionName: 
         !If [ IsProd, 'ring-downloader', !Sub 'ring-downloader-${BranchName}' ]
       Description: Downloads ring videos
-      Runtime: python3.8
-      CodeUri: ./packages/init.py
-      Handler: init.lambda_handler
+      PackageType: Image
+      ImageUri : !Ref ImageUri
       MemorySize: 128
       Timeout: 20
       Policies:
