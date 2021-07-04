@@ -19,49 +19,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
       - name: Run build.sh
         working-directory: ./build
         env:
           GIT_SHA: ${{ github.sha }}
-          VERSION: ${{ github.run_number }}
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_NUMBER }}
         run: |
           chmod +x ./build.sh
           ./build.sh
-          
-      - name: Create deployment
-        id: create_deployment
-        uses: octokit/request-action@v2.x
-        env:
-          GITHUB_TOKEN: ${{ secrets.DEPLOYMENT_PAT}}
-        with:
-          route: POST /repos/:repository/deployments
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
-          auto_merge: false
-          required_contexts: '[]'
-          environment: 'Development'
-          production_environment: false
 
   deploy:
       needs: build
       name: Deploy
       runs-on: ubuntu-latest
       steps:
-        - name: Get deployment
-          uses: octokit/request-action@v2.x
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            route: GET /repos/:repository/deployments?sha=:sha
-            repository: ${{ github.repository }}
-            sha: ${{ github.sha }}
-          
         - name: Checkout
           uses: actions/checkout@v2
           
@@ -72,10 +42,6 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: ap-southeast-2
 
-        - name: Login to Amazon ECR
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v1
-          
         - name: Extract branch name
           shell: bash
           run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
@@ -85,10 +51,7 @@ jobs:
           working-directory: ./build
           env:
             GIT_SHA: ${{ github.sha }}
-            VERSION: ${{ github.run_number }}
             BRANCH: ${{ steps.extract_branch.outputs.branch }}
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-            AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_NUMBER }}
           run: |
             chmod +x ./deploy.sh
             ./deploy.sh

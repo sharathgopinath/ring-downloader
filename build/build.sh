@@ -2,14 +2,20 @@
 set -euxo pipefail
 
 : ${GIT_SHA?"GIT_SHA env variable is required"}
-: ${AWS_ACCOUNT_ID?"ACCOUNT_ID env variable is required"}
-: ${ECR_REGISTRY?"ECR_REGISTRY env variable is required"}
+
 project="ring-downloader"
 
-echo "Build and tag..."
+echo "Create package..."
 
-image_uri="${ECR_REGISTRY}/${project}:${GIT_SHA}"
-docker build -t "${image_uri}" -f ../dockerfile ../
+mkdir ./packages || true
 
-echo "Pushing to ECR..."
-docker push $image_uri
+cp -a ../src/. ./packages
+pip install -r requirements.txt -t ./packages
+
+aws cloudformation package \
+    --template-file="./cloudformation.yaml" \
+    --output-template-file="./package.yaml" \
+    --s3-prefix="${project}/${GIT_SHA}" \
+    --s3-bucket="my-aws-code"
+
+aws s3 cp "./package.yaml" "s3://my-aws-code/${project}/${GIT_SHA}/"

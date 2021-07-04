@@ -1,25 +1,18 @@
 import json
 import boto3
 import sys
-from pathlib import Path
 from pprint import pprint
 
 from ring_doorbell import Ring, Auth
 from oauthlib.oauth2 import MissingTokenError
 
-cache_file = Path("token.cache")
+secret_name = "RingCredentials"
+region_name = "ap-southeast-2"
 
 def lambda_handler(event, context):
-    # init_ring()
-    return {
-        'statusCode': 200,
-        'body': json.dumps(f'Hello {event["name"]}!')
-    }
+    init_ring()
 
 def get_secret():
-    secret_name = "RingCredentials"
-    region_name = "ap-southeast-2"
-
     session = boto3.session.Session()
     client = session.client(
         service_name = "secretsmanager",
@@ -38,11 +31,30 @@ def get_secret():
         return text_secret_data
 
 def token_updated(token):
-    cache_file.write_text(json.dumps(token))
+    ring_credentials = json.loads(get_secret())
+    ring_credentials["token"] = json.dumps(token)
+    ring_credentials["2fa"] = ""
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name = "secretsmanager",
+        region_name = region_name,
+    )
+
+    try:
+        client.update_secret(
+        SecretId = secret_name,
+        SecretString = json.dumps(ring_credentials)
+    )
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        raise    
 
 def init_ring():
-    if cache_file.is_file():
-        auth = Auth("ring-downloader", json.loads(cache_file.read_text()), token_updated)
+    ring_credentials = json.loads(get_secret())
+
+    if ring_credentials["token"]:
+        auth = Auth("ring-downloader", json.loads(ring_credentials["token"]), token_updated)
         auth.refresh_tokens()
     else:
         ring_credentials = json.loads(get_secret())
@@ -52,7 +64,7 @@ def init_ring():
         try:
             auth.fetch_token(username, password)
         except MissingTokenError:
-            auth.fetch_token(username, password, ring_credentials["token"])
+            auth.fetch_token(username, password, ring_credentials["2fa"])
 
     ring = Ring(auth)
     ring.update_data()

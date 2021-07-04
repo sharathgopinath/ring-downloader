@@ -6,9 +6,6 @@ Parameters:
   BranchName:
     Type: String
     Description: Name of the branch.
-  ImageUri:
-    Type: String
-    Description: Container image uri
 
 Conditions:
   IsProd: !Equals [!Ref BranchName, 'main']
@@ -20,7 +17,7 @@ Resources:
       Description: Credentials to access ring account
       Name: RingCredentials
       SecretString:
-        "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"token\": \"replace-me\"}"
+        "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"2fa\": \"replace-me\", \"token\": \"\"}"
 
   DownloaderFunction:
     Type: AWS::Serverless::Function
@@ -28,13 +25,20 @@ Resources:
       FunctionName: 
         !If [ IsProd, 'ring-downloader', !Sub 'ring-downloader-${BranchName}' ]
       Description: Downloads ring videos
-      PackageType: Image
-      ImageUri : !Ref ImageUri
+      Runtime: python3.8
+      CodeUri: ./packages/
+      Handler: init.lambda_handler
       MemorySize: 128
       Timeout: 20
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref RingCredentials
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:UpdateSecret
+              Resource: !Ref RingCredentials
       Events:
         ScheduleEvent:
           Type: Schedule
