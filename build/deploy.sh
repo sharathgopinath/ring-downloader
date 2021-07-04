@@ -2,8 +2,8 @@
 set -euxo pipefail
 
 : ${GIT_SHA?"GIT_SHA env variable is required"}
-: ${VERSION?"VERSION env variable is required"}
 : ${BRANCH?"BRANCH env variable is required"}
+
 project="ring-downloader"
 stack_name=${project}-${BRANCH}
 

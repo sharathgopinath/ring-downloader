@@ -2,19 +2,16 @@
 set -euxo pipefail
 
 : ${GIT_SHA?"GIT_SHA env variable is required"}
+
 project="ring-downloader"
 
-echo "Building..."
+echo "Create package..."
 
 mkdir ./packages || true
 
-image_name="${project}:${GIT_SHA}"
-docker build -f ../dockerfile -t $image_name ../
-container_id=$(docker create $image_name)
-docker cp $container_id:./app/init.py ./packages/init.py
-docker rm -v $container_id
+cp -a ../src/. ./packages
+pip install -r requirements.txt -t ./packages
 
-echo "Publishing package..."
 aws cloudformation package \
     --template-file="./cloudformation.yaml" \
     --output-template-file="./package.yaml" \

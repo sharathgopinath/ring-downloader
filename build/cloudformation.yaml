@@ -11,6 +11,14 @@ Conditions:
   IsProd: !Equals [!Ref BranchName, 'main']
 
 Resources:
+  RingCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Credentials to access ring account
+      Name: RingCredentials
+      SecretString:
+        "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"2fa\": \"replace-me\", \"token\": \"\"}"
+
   DownloaderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -18,7 +26,30 @@ Resources:
         !If [ IsProd, 'ring-downloader', !Sub 'ring-downloader-${BranchName}' ]
       Description: Downloads ring videos
       Runtime: python3.8
-      CodeUri: ./packages/init.py
+      CodeUri: ./packages/
       Handler: init.lambda_handler
       MemorySize: 128
       Timeout: 20
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref RingCredentials
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:UpdateSecret
+              Resource: !Ref RingCredentials
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'rate(30 minutes)'
+            Name: RingDownloadSchedule
+            Description: Download schedule
+            Enabled: true
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref DownloaderFunction
+      RetentionInDays: 14
