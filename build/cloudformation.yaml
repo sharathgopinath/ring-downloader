@@ -40,7 +40,7 @@ Resources:
       CodeUri: ./packages/
       Handler: init.lambda_handler
       MemorySize: 128
-      Timeout: 20
+      Timeout: 300
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref RingCredentials
@@ -50,6 +50,8 @@ Resources:
               Action:
                 - secretsmanager:UpdateSecret
               Resource: !Ref RingCredentials
+        - S3ReadPolicy:
+            BucketName: !Ref S3Bucket
         - S3WritePolicy:
             BucketName: !Ref S3Bucket
       Events:
@@ -60,6 +62,11 @@ Resources:
             Name: !Sub ${AWS::StackName}-downloader-schedule
             Description: Download schedule
             Enabled: true
+      Environment:
+        Variables:
+          CREDENTIALS_SECRET_NAME: !Sub /${AWS::StackName}/RingCredentials
+          BUCKET_NAME: !Ref S3Bucket
+          VIDEO_HISTORY_LIMIT: 10
 
   LogGroup:
     Type: AWS::Logs::LogGroup

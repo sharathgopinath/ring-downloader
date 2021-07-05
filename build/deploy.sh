@@ -24,4 +24,4 @@ aws cloudformation deploy \
     --tags PROJECT=${project} STACK=${stack_name} \
     || ( aws cloudformation describe-stack-events --stack-name $stack_name; echo "Stack failed to deploy"; exit 1 )
 
-aws cloudformation set-stack-policy --stack-name ${stack_name} --stack-policy-body file://stack-policy.json
+# aws cloudformation set-stack-policy --stack-name ${stack_name} --stack-policy-body file://stack-policy.json
