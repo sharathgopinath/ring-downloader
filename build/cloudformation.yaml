@@ -15,10 +15,21 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: Credentials to access ring account
-      Name: RingCredentials
+      Name: !Sub /${AWS::StackName}/RingCredentials
       SecretString:
         "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"2fa\": \"replace-me\", \"token\": \"\"}"
 
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-uploads
+      AccessControl: Private
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpirationRule
+            Status: Enabled
+            ExpirationInDays: 1
+  
   DownloaderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -39,12 +50,14 @@ Resources:
               Action:
                 - secretsmanager:UpdateSecret
               Resource: !Ref RingCredentials
+        - S3WritePolicy:
+            BucketName: !Ref S3Bucket
       Events:
         ScheduleEvent:
           Type: Schedule
           Properties:
             Schedule: 'rate(30 minutes)'
-            Name: RingDownloadSchedule
+            Name: !Sub ${AWS::StackName}-downloader-schedule
             Description: Download schedule
             Enabled: true
 
