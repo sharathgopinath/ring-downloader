@@ -71,7 +71,7 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref DownloaderFunction
+      LogGroupName: !Sub "/aws/lambda/${DownloaderFunction}"
       RetentionInDays: 14
 
   ErrorMetric:
@@ -95,3 +95,5 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       EvaluationPeriods: 1
       Threshold: 1
+      Period: 60
+      Statistic: "Sum"
