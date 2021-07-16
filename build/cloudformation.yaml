@@ -15,10 +15,21 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: Credentials to access ring account
-      Name: RingCredentials
+      Name: !Sub /${AWS::StackName}/RingCredentials
       SecretString:
         "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"2fa\": \"replace-me\", \"token\": \"\"}"
 
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-uploads
+      AccessControl: Private
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpirationRule
+            Status: Enabled
+            ExpirationInDays: 1
+  
   DownloaderFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -29,7 +40,7 @@ Resources:
       CodeUri: ./packages/
       Handler: init.lambda_handler
       MemorySize: 128
-      Timeout: 20
+      Timeout: 300
       Policies:
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Ref RingCredentials
@@ -39,17 +50,50 @@ Resources:
               Action:
                 - secretsmanager:UpdateSecret
               Resource: !Ref RingCredentials
+        - S3ReadPolicy:
+            BucketName: !Ref S3Bucket
+        - S3WritePolicy:
+            BucketName: !Ref S3Bucket
       Events:
         ScheduleEvent:
           Type: Schedule
           Properties:
             Schedule: 'rate(30 minutes)'
-            Name: RingDownloadSchedule
+            Name: !Sub ${AWS::StackName}-downloader-schedule
             Description: Download schedule
             Enabled: true
+      Environment:
+        Variables:
+          CREDENTIALS_SECRET_NAME: !Sub /${AWS::StackName}/RingCredentials
+          BUCKET_NAME: !Ref S3Bucket
+          VIDEO_HISTORY_LIMIT: 10
 
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref DownloaderFunction
+      LogGroupName: !Sub "/aws/lambda/${DownloaderFunction}"
       RetentionInDays: 14
+
+  ErrorMetric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: "ERROR"
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: !Sub ${AWS::StackName}
+          MetricName: "ErrorCount"
+
+  ErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm if errors are over the threshold limit"
+      Namespace: !Sub ${AWS::StackName}
+      AlarmName: ErrorAlarm
+      MetricName: "ErrorCount"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Threshold: 1
+      Period: 60
+      Statistic: "Sum"
