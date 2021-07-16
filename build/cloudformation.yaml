@@ -73,3 +73,21 @@ Resources:
     Properties:
       LogGroupName: !Ref DownloaderFunction
       RetentionInDays: 14
+
+  ErrorMetric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref LogGroup
+      FilterPattern: "ERROR"
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: !Sub ${AWS::StackName}
+          MetricName: "ErrorCount"
+
+  # ErrorAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     AlarmDescription: "Alarm if errors are over the threshold limit"
+  #     Namespace: !Sub ${AWS::StackName}
+  #     MetricName: 
