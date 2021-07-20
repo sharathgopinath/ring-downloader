@@ -19,8 +19,33 @@ Resources:
       SecretString:
         "{\"username\": \"replace-me\", \"password\": \"replace-me\", \"2fa\": \"replace-me\", \"token\": \"\"}"
 
+  BroadcastTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-video-downloaded
+
+  BroadcastTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: s3.amazonaws.com
+          Action: sns:Publish
+          Resource: 
+            !Ref BroadcastTopic
+          Condition:
+            ArnEquals:
+              aws:SourceArn: !Sub arn:aws:s3:::${AWS::StackName}-uploads
+      Topics: 
+      - !Ref BroadcastTopic
+
   S3Bucket:
     Type: AWS::S3::Bucket
+    DependsOn: 
+    - BroadcastTopicPolicy
     Properties:
       BucketName: !Sub ${AWS::StackName}-uploads
       AccessControl: Private
@@ -29,6 +54,10 @@ Resources:
           - Id: ExpirationRule
             Status: Enabled
             ExpirationInDays: 1
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Topic: !Ref BroadcastTopic
+            Event: "s3:ObjectCreated:Put"
   
   DownloaderFunction:
     Type: AWS::Serverless::Function
@@ -90,10 +119,17 @@ Resources:
     Properties:
       AlarmDescription: "Alarm if errors are over the threshold limit"
       Namespace: !Sub ${AWS::StackName}
-      AlarmName: ErrorAlarm
+      AlarmName: !Sub ${AWS::StackName}-ErrorAlarm
       MetricName: "ErrorCount"
       ComparisonOperator: GreaterThanOrEqualToThreshold
       EvaluationPeriods: 1
       Threshold: 1
       Period: 60
       Statistic: "Sum"
+
+Outputs:
+  BroadcastTopicOutput:
+    Description: S3 Put object topic arn when a new ring video is uploaded
+    Value: !Ref BroadcastTopic
+    Export:
+      Name: !Sub ${AWS::StackName}-sns-arn
