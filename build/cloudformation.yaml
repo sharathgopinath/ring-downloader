@@ -133,3 +133,8 @@ Outputs:
     Value: !Ref BroadcastTopic
     Export:
       Name: !Sub ${AWS::StackName}-sns-arn
+  DownloadBucketOutput:
+    Description: S3 bucket name where ring videos are downloaded
+    Value: !Ref S3Bucket
+    Export:
+      Name: !Sub ${AWS::StackName}-s3bucket-name
