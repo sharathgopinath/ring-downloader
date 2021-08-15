@@ -87,7 +87,7 @@ Resources:
         ScheduleEvent:
           Type: Schedule
           Properties:
-            Schedule: 'rate(30 minutes)'
+            Schedule: 'rate(5 minutes)'
             Name: !Sub ${AWS::StackName}-downloader-schedule
             Description: Download schedule
             Enabled: true
