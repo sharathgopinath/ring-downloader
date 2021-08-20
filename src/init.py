@@ -10,6 +10,7 @@ from oauthlib.oauth2 import MissingTokenError
 secret_name = os.environ.get("CREDENTIALS_SECRET_NAME")
 bucket_name = os.environ.get("BUCKET_NAME")
 video_history_limit = os.environ.get("VIDEO_HISTORY_LIMIT")
+topic_arn = os.environ.get("TOPIC_ARN")
 directory_prefix = "/tmp/"
 region_name = "ap-southeast-2"
 
@@ -61,6 +62,7 @@ def upload_video(cam, cam_name):
     logger.info(f"No. of videos to upload for {cam_name}: {len(history)}")
 
     s3_client = boto3.client("s3")
+    sns_client = boto3.client("sns")
 
     for event in history:
         file_name = f"{event['id']}_{cam_name}.mp4"
@@ -70,15 +72,16 @@ def upload_video(cam, cam_name):
         if (len(obj) > 0):
             logger.info(f"file: {file_name} exists, skipping.")
         else:
-            try:
-                local_file_path = f"{directory_prefix}{file_name}"
-                cam.recording_download(event['id'], local_file_path)
-
-                logger.info(f"Uploading {bucket_name}/{file_name}")
-                response = s3_client.upload_file(local_file_path, bucket_name, file_name)
-
-            except:
-                logger.error("Unexpected error:", sys.exc_info()[0])
+            local_file_path = f"{directory_prefix}{file_name}"
+            cam.recording_download(event['id'], local_file_path)
+            logger.info(f"Uploading {bucket_name}/{file_name}")
+            response = s3_client.upload_file(local_file_path, bucket_name, file_name)
+            message = { "bucket_name": bucket_name, "file_name": file_name }
+            sns_client.publish( 
+                TopicArn = topic_arn,
+                MessageStructure = "json",
+                Message = json.dumps({"default": json.dumps(message)})
+            )
 
 def get_secret():
     session = boto3.session.Session()

@@ -54,10 +54,6 @@ Resources:
           - Id: ExpirationRule
             Status: Enabled
             ExpirationInDays: 1
-      NotificationConfiguration:
-        TopicConfigurations:
-          - Topic: !Ref BroadcastTopic
-            Event: "s3:ObjectCreated:Put"
   
   DownloaderFunction:
     Type: AWS::Serverless::Function
@@ -83,6 +79,8 @@ Resources:
             BucketName: !Ref S3Bucket
         - S3WritePolicy:
             BucketName: !Ref S3Bucket
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt BroadcastTopic.TopicName
       Events:
         ScheduleEvent:
           Type: Schedule
@@ -96,6 +94,7 @@ Resources:
           CREDENTIALS_SECRET_NAME: !Sub /${AWS::StackName}/RingCredentials
           BUCKET_NAME: !Ref S3Bucket
           VIDEO_HISTORY_LIMIT: 10
+          TOPIC_ARN: !Ref BroadcastTopic
 
   LogGroup:
     Type: AWS::Logs::LogGroup

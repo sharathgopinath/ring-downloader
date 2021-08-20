@@ -132,3 +132,7 @@ dmypy.json
 
 # Cache file
 *.cache
+
+# venv
+*.cfg
+Scripts/
