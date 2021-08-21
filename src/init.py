@@ -76,7 +76,7 @@ def upload_video(cam, cam_name):
             cam.recording_download(event['id'], local_file_path)
             logger.info(f"Uploading {bucket_name}/{file_name}")
             response = s3_client.upload_file(local_file_path, bucket_name, file_name)
-            message = { "bucket_name": bucket_name, "file_name": file_name }
+            message = { "bucket_name": bucket_name, "file_name": file_name, "cam_name": cam_name }
             sns_client.publish( 
                 TopicArn = topic_arn,
                 MessageStructure = "json",
